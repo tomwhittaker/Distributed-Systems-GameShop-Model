@@ -4,6 +4,10 @@ from socket import *
 from threading import *
 from Custom import *
 
+items=[]
+items.append(Item("For Honour",40))
+
+
 def placeOder():
     print ''
 def retrieveOrderHistory():
@@ -11,14 +15,15 @@ def retrieveOrderHistory():
 def cancelOrder():
     print ''
 def connection(sock):
-    print sock.recv(1024)
     while 1:
         if sock.getpeername()[0] != '127.0.0.1':
             break
         sentence = sock.recv(1024)
+        print sentence
         numbers = sentence.split(' ')
         suma=0
         for x in numbers:
+            print x
             suma = suma + int(x)
         sock.send(str(suma))
 
