@@ -2,6 +2,7 @@
 
 from socket import *
 from Custom import *
+import cPickle as pickle
 
 
 
@@ -14,7 +15,25 @@ def retrieveOrderHistory():
 def cancelOrder():
     print ''
 
+def menu(sock):
+    print 'Ready'
+    sentence = raw_input('Do you wish to access the online Game Shop? (y=yes and n=no)')
+    if sentence=='n':
+        sock.close()
+    else:
+        print sock.recv(1024) #a/b/c
+        sentence = raw_input('')
+        sock.send(sentence)
+        sentence = sock.recv(1024)
+        print sentence
+        sentence = sock.recv(1024)
+        items = pickle.loads(sentence)
+        counter=1
+        for x in items:
 
+            print str(counter)+": ",x
+            counter= counter+1
+        sock.close()
 
 
 
@@ -22,12 +41,4 @@ serverName = 'localhost'
 serverPort = 12001
 clientSocket = socket(AF_INET, SOCK_STREAM)
 clientSocket.connect((serverName,serverPort))
-print 'Ready'
-while 1:
-    sentence = raw_input('Input 5 numbers seperated by spaces ')
-    if sentence=="x":
-        break
-    clientSocket.send(sentence)
-    modifiedSentence = clientSocket.recv(1024)
-    print "From Server:", modifiedSentence
-clientSocket.close()
+menu(clientSocket)
