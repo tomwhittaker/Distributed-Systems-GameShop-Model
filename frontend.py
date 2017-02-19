@@ -18,12 +18,25 @@ def retrieveOrderHistory():
 def cancelOrder():
     print ''
 def connection(sock):
-    sock.send("Would you like to a)make an order, b)retrieve your order history or c) cancel an order?")
-    sentence = sock.recv(1024)
+    sock.send("Would you like to a)make an order, b)retrieve your order history or c) cancel an order?")#1
+    sentence = sock.recv(1024) #1
     if sentence=='a':
-        sock.send("Which item would you like?")
+        sock.send("Which item would you like?")#2
         itemlist =pickle.dumps(items,-1)
-        sock.send(itemlist)
+        sock.send(itemlist) #3
+        sentence = sock.recv(1024) #2
+        num= int(sentence)
+        item = items[num-1]
+        name=item.getName()
+        sock.send("Can you confirm that you would like to order "+name+"?")#4
+        sentence = sock.recv(1024) #3
+        print sentence
+        if sentence=='y':
+            sock.send("Order Made")#5
+        elif sentence == 'n':
+            sock.send("Order Not Made")#5
+        else:
+            sock.send("invalid")#5
     if sentence=='b':
         sock.send(sentence)
     if sentence=='c':

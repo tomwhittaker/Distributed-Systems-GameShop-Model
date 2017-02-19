@@ -21,18 +21,25 @@ def menu(sock):
     if sentence=='n':
         sock.close()
     else:
-        print sock.recv(1024) #a/b/c
+        print sock.recv(1024) #a/b/c #1
         sentence = raw_input('')
-        sock.send(sentence)
-        sentence = sock.recv(1024)
+        sock.send(sentence) #1
+        sentence = sock.recv(1024) #what item #2
         print sentence
-        sentence = sock.recv(1024)
+        sentence = sock.recv(1024) #pickle #3
         items = pickle.loads(sentence)
         counter=1
         for x in items:
-
             print str(counter)+": ",x
             counter= counter+1
+        sentence = raw_input('')
+        sock.send(sentence) #2
+        sentence = sock.recv(1024) #confirm #4
+        print sentence
+        sentence = raw_input('')
+        sock.send(sentence) #3
+        sentence =sock.recv(1024) #tell user their answer #5
+        print sentence
         sock.close()
 
 

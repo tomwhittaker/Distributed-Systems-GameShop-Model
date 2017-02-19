@@ -7,13 +7,16 @@ class Item:
     def __str__(self):
         return self.name
 
+    def getName(self):
+        return self.name
+
 class Order:
     """A simple order class"""
     def __init__(self, item):
       self.item = item
       canceled=False;
 
-    def cancelOrder():
+    def cancelOrder(self):
         canceled=True;
 
     def __str__(self):
@@ -26,7 +29,7 @@ class Customer:
       self.address = address
       self.orders = []
 
-    def addOrder(order):
+    def addOrder(self,order):
         orders.append(order)
 
     def __str__(self):
