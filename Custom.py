@@ -12,12 +12,22 @@ class Item:
 
 class Order:
     """A simple order class"""
-    def __init__(self, item):
+    def __init__(self, item, date):
       self.item = item
-      canceled=False;
+      self.canceled=False
+      self.date = date
 
     def cancelOrder(self):
-        canceled=True;
+        self.canceled=True
+
+    def getItem(self):
+        return self.item
+
+    def getDate(self):
+        return self.date
+
+    def getCanceled(self):
+        return self.canceled
 
     def __str__(self):
         return self.item
@@ -30,7 +40,10 @@ class Customer:
       self.orders = []
 
     def addOrder(self,order):
-        orders.append(order)
+        self.orders.append(order)
+
+    def getHistory(self):
+        return self.orders
 
     def __str__(self):
         return self.name

@@ -9,7 +9,11 @@ items=[]
 items.append(Item("For Honour",40))
 items.append(Item("Dark Souls",20))
 items.append(Item("Halo 3",15))
-
+customer = Customer("Tom","123456")
+order = Order(items[0],'1/1/1')
+order2 = Order(items[1],'1/1/1')
+customer.addOrder(order)
+customer.addOrder(order2)
 
 def placeOder():
     print ''
@@ -38,10 +42,11 @@ def connection(sock):
         else:
             sock.send("invalid")#5
     if sentence=='b':
-        sock.send(sentence)
+        orderHistory =pickle.dumps(customer.getHistory(),-1)
+        sock.send(orderHistory)
     if sentence=='c':
         sock.send(sentence)
-
+    connectionSocket.close()
 
 serverPort = 12001
 serverSocket = socket(AF_INET, SOCK_STREAM)
@@ -50,4 +55,3 @@ serverSocket.listen(5)
 print 'The server is ready to recieve'
 connectionSocket, addr = serverSocket.accept()
 connection(connectionSocket)
-connectionSocket.close()
