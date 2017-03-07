@@ -1,4 +1,6 @@
+#deals with shit
 from __future__ import print_function
+from Custom import *
 import Pyro4
 import Pyro4.naming
 import Pyro4.core
@@ -7,30 +9,14 @@ import time
 import select
 import sys
 
-@Pyro4.expose
-@Pyro4.behavior(instance_mode="single")
-class Warehouse(object):
-    def __init__(self):
-        self.contents = ["chair", "bike", "flashlight", "laptop", "couch"]
-
-    def list_contents(self):
-        return self.contents
-
-    def take(self, name, item):
-        self.contents.remove(item)
-        print("{0} took the {1}.".format(name, item))
-
-    def store(self, name, item):
-        self.contents.append(item)
-        print("{0} stored the {1}.".format(name, item))
-
-
 def main():
+    Pyro4.config.SERIALIZER = 'pickle'
+    Pyro4.config.SERIALIZERS_ACCEPTED.add('pickle')
     hostname=socket.gethostname()
     nameserverUri, nameserverDaemon, broadcastServer = Pyro4.naming.startNS(host=hostname)
     pyrodaemon=Pyro4.core.Daemon(host=hostname)
-    serveruri=pyrodaemon.register(Warehouse())
-    nameserverDaemon.nameserver.register("example.warehouse",serveruri)
+    serveruri=pyrodaemon.register(Server('master','jtyfibk'))
+    nameserverDaemon.nameserver.register("example.server",serveruri)
     while True:
         nameserverSockets = set(nameserverDaemon.sockets)
         pyroSockets = set(pyrodaemon.sockets)

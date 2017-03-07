@@ -1,8 +1,6 @@
 from __future__ import print_function
 import Pyro4
-
-global orderCounter
-orderCounter=0
+import time
 
 class Item:
     """A simple item class"""
@@ -18,13 +16,12 @@ class Item:
 
 class Order:
     """A simple order class"""
-    def __init__(self, item, date):
+    def __init__(self, item, date, orderId):
       self.item = item
       self.canceled=False
       self.date = date
       global orderCounter
-      self.id = orderCounter
-      orderCounter=orderCounter+1
+      self.id = orderId
 
     def cancelOrder(self):
         self.canceled=True
@@ -46,16 +43,19 @@ class Order:
 
 @Pyro4.expose
 @Pyro4.behavior(instance_mode="single")
-class Customer:
-    """A simple customer class"""
+class Server:
+    """A simple server class"""
     def __init__(self, name, address):
       self.name = name
       self.address = address
       self.orders = []
       self.canceledOrders = []
+      self.orderCounter=0
 
-    def addOrder(self,order):
+    def addOrder(self,item):
+        order = Order(item,time.strftime("%d/%m/%Y"),self.orderCounter)
         self.orders.append(order)
+        self.orderCounter=self.orderCounter+1
 
     def getOrders(self):
         return self.orders
@@ -63,13 +63,17 @@ class Customer:
     def getCanceled(self):
         return self.canceledOrders
 
-    def cancelOrder(self,order):
-        self.orders.remove(order)
-        order.cancelOrder()
-        self.canceledOrders.append(order)
+    def cancelOrder(self,orderId):
+        for x in self.orders:
+            if str(x.getId())==orderId:
+                self.orders.remove(x)
+                x.cancelOrder()
+                self.canceledOrders.append(x)
+                break
 
     def __str__(self):
         return self.name
 
-    def check():
+    def check(self):
         print("Visited")
+        return "Visited"
