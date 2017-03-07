@@ -64,6 +64,19 @@ def connection(sock,server):
             retrieveOrderHistory(sock,server)
         if sentence=='c':
             cancelOrder(sock,server)
+        if sentence=='x':
+            break
+    print("")
+    print('testing')
+    uri = 'PYRO:server1@localhost:50611'
+    server = Pyro4.Proxy(uri)
+    # print(type(server))
+    # print(type(server.getOrders()))
+    # print(type(server.getOrders()[0]))
+    # print(server.getOrders()[0].getName())
+    uri = 'PYRO:server2@localhost:50612'
+    server = Pyro4.Proxy(uri)
+    print(server.getOrders()[0].getId())
     sock.close()
 
 

@@ -2,6 +2,8 @@ from __future__ import print_function
 import Pyro4
 import time
 
+@Pyro4.expose
+@Pyro4.behavior(instance_mode="single")
 class Item:
     """A simple item class"""
     def __init__(self, name, cost):
@@ -14,6 +16,8 @@ class Item:
     def getName(self):
         return self.name
 
+@Pyro4.expose
+@Pyro4.behavior(instance_mode="single")
 class Order:
     """A simple order class"""
     def __init__(self, item, date, orderId):
@@ -38,6 +42,11 @@ class Order:
     def getId(self):
         return self.id
 
+    def getName(self):
+        item = self.getItem()
+        name =item.getName()
+        return name
+
     def __str__(self):
         return self.item
 
@@ -45,16 +54,24 @@ class Order:
 @Pyro4.behavior(instance_mode="single")
 class Server:
     """A simple server class"""
-    def __init__(self, port):
+    def __init__(self, port,master):
       self.orders = []
       self.canceledOrders = []
       self.orderCounter=0
       self.port = port
+      self.master=master
 
     def addOrder(self,item):
         order = Order(item,time.strftime("%d/%m/%Y"),self.orderCounter)
         self.orders.append(order)
         self.orderCounter=self.orderCounter+1
+        if self.master:
+            uri = 'PYRO:server1@localhost:50611'
+            server = Pyro4.Proxy(uri)
+            server.addOrder(item)
+            uri = 'PYRO:server2@localhost:50612'
+            server = Pyro4.Proxy(uri)
+            server.addOrder(item)
 
     def getOrders(self):
         return self.orders
