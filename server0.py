@@ -11,15 +11,16 @@ import sys
 
 def main():
     # sys.excepthook = Pyro4.util.excepthook
+    serverPort=50610
     Pyro4.config.SERIALIZERS_ACCEPTED = {'json','marshal','serpent','pickle'}
-    server0=Server('efgsd','gdsda')
+    server0=Server(serverPort)
     Pyro4.Daemon.serveSimple(
     {
         server0: "server0",
         # Item: "item",
         # Order:"order"
     },
-    ns=True)
+    ns=False,host='localhost',port=serverPort)
 
 
 if __name__=="__main__":

@@ -76,5 +76,6 @@ connectionSocket, addr = serverSocket.accept()
 # sys.excepthook = Pyro4.util.excepthook
 Pyro4.config.SERIALIZERS_ACCEPTED = {'json','marshal','serpent','pickle'}
 Pyro4.config.SERIALIZER = 'pickle'
-server = Pyro4.Proxy("PYRONAME:server0")
+uri = 'PYRO:server0@localhost:50610'
+server = Pyro4.Proxy(uri)
 connection(connectionSocket,server)

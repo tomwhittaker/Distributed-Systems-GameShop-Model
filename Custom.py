@@ -45,12 +45,11 @@ class Order:
 @Pyro4.behavior(instance_mode="single")
 class Server:
     """A simple server class"""
-    def __init__(self, name, address):
-      self.name = name
-      self.address = address
+    def __init__(self, port):
       self.orders = []
       self.canceledOrders = []
       self.orderCounter=0
+      self.port = port
 
     def addOrder(self,item):
         order = Order(item,time.strftime("%d/%m/%Y"),self.orderCounter)
