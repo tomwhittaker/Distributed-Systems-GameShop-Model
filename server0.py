@@ -13,7 +13,7 @@ def main():
     # sys.excepthook = Pyro4.util.excepthook
     serverPort=50610
     Pyro4.config.SERIALIZERS_ACCEPTED = {'json','marshal','serpent','pickle'}
-    server0=Server(serverPort,True)
+    server0=Server(serverPort,False)
     Pyro4.Daemon.serveSimple(
     {
         server0: "server0",

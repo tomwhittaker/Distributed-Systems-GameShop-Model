@@ -7,7 +7,6 @@ import Pyro4
 import sys
 import time
 
-global items
 itemsL=[]
 itemsL.append(Item("For Honour",40))
 itemsL.append(Item("Dark Souls",20))
@@ -78,6 +77,7 @@ def cancelOrder(sock,server,user):
 
 def connection(sock,server):
     sentence=sock.recv(1024) #0.5r
+    print sentence
     server.setCurrentUser(sentence)
     user=sentence
     while True:
@@ -172,8 +172,9 @@ connectionSocket, addr = serverSocket.accept()
 sys.excepthook = Pyro4.util.excepthook
 Pyro4.config.SERIALIZERS_ACCEPTED = {'json','marshal','serpent','pickle'}
 Pyro4.config.SERIALIZER = 'pickle'
-uri = 'PYRO:server0@localhost:50610'
+ports=[50610,50611,50612]
+master=ports[1]
+uri = 'PYRO:server'+str(master)[-1:]+'@localhost:'+str(master)
 server = Pyro4.Proxy(uri)
-print(1)
-print(type(server))
+server.setMaster()
 connection(connectionSocket,server)

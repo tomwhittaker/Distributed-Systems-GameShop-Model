@@ -107,12 +107,13 @@ class Server:
                 self.users[user][1].append(x)
                 break
         if self.master:
-            uri = 'PYRO:server1@localhost:50611'
-            server1 = Pyro4.Proxy(uri)
-            server1.cancelOrder(orderId,user)
-            uri = 'PYRO:server2@localhost:50612'
-            server2 = Pyro4.Proxy(uri)
-            server2.cancelOrder(orderId,user)
+            for x in self.ports:
+                uri = 'PYRO:server'+str(x)[-1:]+'@localhost:'+str(x)
+                print(uri)
+                server1 = Pyro4.Proxy(uri)
+                server1.cancelOrder(orderId,user)
+
+
 
     def __str__(self):
         return self.name
@@ -127,9 +128,19 @@ class Server:
             self.users[user]=([],[])
             print("user created")
         if self.master:
-            uri = 'PYRO:server1@localhost:50611'
+            for x in self.ports:
+                uri = 'PYRO:server'+str(x)[-1:]+'@localhost:'+str(x)
+                print(uri)
+                server1 = Pyro4.Proxy(uri)
+                server1.setCurrentUser(user)
+        print(self.ports)
+
+    def setMaster(self):
+        self.master=True
+        for x in self.ports:
+            uri = 'PYRO:server'+str(x)[-1:]+'@localhost:'+str(x)
             server1 = Pyro4.Proxy(uri)
-            server1.setCurrentUser(user)
-            uri = 'PYRO:server2@localhost:50612'
-            server2 = Pyro4.Proxy(uri)
-            server2.setCurrentUser(user)
+            server1.setSlave()
+
+    def setSlave(self):
+        self.master=False
