@@ -7,20 +7,34 @@ import cPickle as pickle
 
 
 def placeOder(sock):
-    print "Which item would you like?"
+    run=True
     sentence = sock.recv(1024)#1r
     items = pickle.loads(sentence)
     counter=1
     for x in items:
         print str(counter)+": ",x
         counter= counter+1
+    while run:
+        print "Which item would you like?"
+        sentence = raw_input('')
+        sock.send(sentence) #2s
+        sentence = sock.recv(1024)#2r
+        print "Please confirm you would like to order "+sentence+"?"
+        sentence = raw_input('')
+        sock.send(sentence)#3s
+        sentence = sock.recv(1024)#3r
+        if sentence=="False":
+            run=False
+        if run:
+            print "Would you like to buy another item?"
+            sentence = raw_input('')
+            sock.send(sentence)#4s
+            if sentence=='n':
+                run=False
+    print "Please can you confirm that you would like to make this order?"
     sentence = raw_input('')
-    sock.send(sentence) #2s
-    sentence = sock.recv(1024)#2r
-    print "Please confirm you would like to order "+sentence+"?"
-    sentence = raw_input('')
-    sock.send(sentence)#3s
-    sentence =sock.recv(1024)#3r
+    sock.send(sentence)#5s
+    sentence =sock.recv(1024)#4r
     print sentence
 
 def retrieveOrderHistory(sock):
@@ -29,7 +43,8 @@ def retrieveOrderHistory(sock):
     print "Orders:"
     for x in history:
         print "Order ",x.getId(),":"
-        print x.getItem()[0].getName()
+        for y in x.getItem():
+            print y.getName()
         print x.getDate()
         print ""
     can = sock.recv(1024)#2r
@@ -38,7 +53,8 @@ def retrieveOrderHistory(sock):
     print "Cancled Orders:"
     for x in canceled:
         print "Order ID: ",x.getId()
-        print x.getItem()[0].getName()
+        for y in x.getItem():
+            print y.getName()
         print x.getDate()
         print ""
 
@@ -50,7 +66,8 @@ def cancelOrder(sock):
         history = pickle.loads(sentence)
         for x in history:
             print "Order ",x.getId(),":"
-            print x.getItem()[0].getName()
+            for y in x.getItem():
+                print y.getName()
             print x.getDate()
             print ""
     else:
@@ -61,11 +78,11 @@ def cancelOrder(sock):
     sock.send(sentence)#2s
     name=''
     for x in history:
+        name=''
         if sentence == str(x.getId()):
-            print type(x)
-            print x.getItem()
-            print x.getItem()[0]
-            name=x.getItem()[0].getName()
+            for y in x.getItem():
+                name = name+ y.getName()+','
+        name=name[:len(name)-1]
     print "Please confirm thay you would like to cancel your order of "+name+"?"
     sentence = raw_input('')
     sock.send(sentence)#3s

@@ -37,6 +37,9 @@ class Order:
     def getItem(self):
         return self.items
 
+    def addItem(self,item):
+        self.items.append(item)
+
     def getDate(self):
         return self.date
 
@@ -63,49 +66,49 @@ class Server:
       self.port = port
       self.master=master
 
-    def addOrder(self,items):
+    def addOrder(self,items,user):
+        l=[]
+        for x in items:
+            l.append((x.getName(),x.getCost()))
         order = Order(items,time.strftime("%d/%m/%Y"),self.orderCounter)
-        self.users[self.user][0].append(order)
+        self.users[user][0].append(order)
         self.orderCounter=self.orderCounter+1
         if self.master:
             uri = 'PYRO:server1@localhost:50611'
             server1 = Pyro4.Proxy(uri)
-            server1.createOrderAndItem(items[0].getName(),items[0].getCost())
+            server1.createOrderAndItems(l,user)
             uri = 'PYRO:server2@localhost:50612'
             server2 = Pyro4.Proxy(uri)
-            server2.createOrderAndItem(items[0].getName(),items[0].getCost())
+            server2.createOrderAndItems(l,user)
 
-    def createOrderAndItem(self,name,cost):
-        item = Item(name,cost)
-        order = Order(item,time.strftime("%d/%m/%Y"),self.orderCounter)
-        self.users[self.user][0].append(order)
+    def createOrderAndItems(self,items,user):
+        order = Order([],time.strftime("%d/%m/%Y"),self.orderCounter)
+        for x in items:
+            item = Item(x[0],x[0])
+            order.addItem(item)
+        self.users[user][0].append(order)
         self.orderCounter=self.orderCounter+1
 
-    def getOrders(self):
-        return self.users[self.user][0]
+    def getOrders(self,user):
+        return self.users[user][0]
 
-    def getCanceled(self):
-        return self.users[self.user][1]
+    def getCanceled(self,user):
+        return self.users[user][1]
 
-    def cancelOrder(self,orderId):
-        for x in self.users[self.user][0]:
+    def cancelOrder(self,orderId,user):
+        for x in self.users[user][0]:
             if str(x.getId())==str(orderId):
-                self.users[self.user][0].remove(x)
+                self.users[user][0].remove(x)
                 x.cancelOrder()
-                self.users[self.user][1].append(x)
+                self.users[user][1].append(x)
                 break
         if self.master:
             uri = 'PYRO:server1@localhost:50611'
             server1 = Pyro4.Proxy(uri)
-            server1.cancelOrder(orderId)
+            server1.cancelOrder(orderId,user)
             uri = 'PYRO:server2@localhost:50612'
             server2 = Pyro4.Proxy(uri)
-            server2.cancelOrder(orderId)
-
-    def getOrderItemName(self,orderId):
-        for x in self.users[self.user][0]:
-            if str(x.getId())==str(orderId):
-                return x.getName()
+            server2.cancelOrder(orderId,user)
 
     def __str__(self):
         return self.name

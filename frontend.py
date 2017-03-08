@@ -7,10 +7,11 @@ import Pyro4
 import sys
 import time
 
-items=[]
-items.append(Item("For Honour",40))
-items.append(Item("Dark Souls",20))
-items.append(Item("Halo 3",15))
+global items
+itemsL=[]
+itemsL.append(Item("For Honour",40))
+itemsL.append(Item("Dark Souls",20))
+itemsL.append(Item("Halo 3",15))
 
 # customer = Customer("Tom","123456")
 # order = Order(items[0],'1/1/1')
@@ -21,54 +22,75 @@ items.append(Item("Halo 3",15))
 # customer.addOrder(order3)
 # customer.cancelOrder(order3)
 
-def placeOder(sock,server):
-    itemlist =pickle.dumps(items,-1)
+def placeOder(sock,server,user):
+    global items
+    items=[]
+    counter=0
+    another=True
+    itemlist =pickle.dumps(itemsL,-1)
     sock.send(itemlist) #1s
-    sentence = sock.recv(1024) #2r
-    num= int(sentence)
-    item = items[num-1]
-    name=item.getName()
-    print(name)
-    sock.send(name)#2s
-    sentence = sock.recv(1024) #3r
-    print(sentence)
+    while another:
+        sentence = sock.recv(1024) #2r
+        num= int(sentence)
+        item = itemsL[num-1]
+        name=item.getName()
+        print(name)
+        sock.send(name)#2s
+        sentence = sock.recv(1024) #3r
+        print(sentence)
+        if sentence=='y':
+            counter=counter+1
+            items.append(item)
+        if counter==3:
+            another=False
+            sock.send('False')#3s
+        else:
+            sock.send('True')#3s
+        if another:
+            sentence =sock.recv(1024)#4r
+            if sentence=='n':
+                another=False
+    sentence = sock.recv(1024)#5r
     if sentence=='y':
-        sock.send("Order Made")#3s
-        server.addOrder([item])
+        sock.send("Order Made")#4s
+        server.addOrder(items,user)
     elif sentence == 'n':
-        sock.send("Order Not Made")#3s
+        sock.send("Order Not Made")#4s
     else:
-        sock.send("invalid")#5print ''
-def retrieveOrderHistory(sock,server):
-    orderHistory =pickle.dumps(server.getOrders(),-1)
+        sock.send("invalid")#4s
+def retrieveOrderHistory(sock,server,user):
+    orderHistory =pickle.dumps(server.getOrders(user),-1)
     sock.send(orderHistory) #1s
-    cancled = pickle.dumps(server.getCanceled(),-1)
+    cancled = pickle.dumps(server.getCanceled(user),-1)
     sock.send(cancled)#2s
-def cancelOrder(sock,server):
-    orderHistory =pickle.dumps(server.getOrders(),-1)
+def cancelOrder(sock,server,user):
+    orderHistory =pickle.dumps(server.getOrders(user),-1)
     sock.send(orderHistory)#1s
     orderToCancel = sock.recv(1024)#2r
     sentence = sock.recv(1024)#3r
     if sentence == 'y':
         sock.send("Order Canceled")#2s
-        server.cancelOrder(orderToCancel)
+        server.cancelOrder(orderToCancel,user)
     else:
         sock.send("Order not Canceled")#2s
 
 def connection(sock,server):
     sentence=sock.recv(1024) #0.5r
     server.setCurrentUser(sentence)
+    user=sentence
     while True:
         sentence = sock.recv(1024) #1r
         print(sentence)
         if sentence=='a':
-            placeOder(sock,server)
+            placeOder(sock,server,user)
         if sentence=='b':
-            retrieveOrderHistory(sock,server)
+            retrieveOrderHistory(sock,server,user)
         if sentence=='c':
-            cancelOrder(sock,server)
+            cancelOrder(sock,server,user)
         if sentence=='x':
             break
+
+
     print("")
     print('testing')
     uri = 'PYRO:server0@localhost:50610'
@@ -76,38 +98,42 @@ def connection(sock,server):
     print('')
     print('1')
     print('')
-    orders = server.getOrders()
+    orders = server.getOrders(user)
     for x in orders:
         print "Order ",x.getId(),":"
-        print x.getItem()[0].getName()
+        for y in x.getItem():
+            print y.getName()
         print x.getDate()
         print ""
     print ""
-    orders = server.getCanceled()
+    orders = server.getCanceled(user)
     print "Cancled Orders:"
     for x in orders:
         print "Order ID: ",x.getId()
-        print x.getItem()[0].getName()
+        for y in x.getItem():
+            print y.getName()
         print x.getDate()
         print ""
 
     uri = 'PYRO:server1@localhost:50611'
     server = Pyro4.Proxy(uri)
     print('')
-    print('1')
+    print('2')
     print('')
-    orders = server.getOrders()
+    orders = server.getOrders(user)
     for x in orders:
         print "Order ",x.getId(),":"
-        print x
+        for y in x.getItem():
+            print y.getName()
         print x.getDate()
         print ""
     print ""
-    orders = server.getCanceled()
+    orders = server.getCanceled(user)
     print "Cancled Orders:"
     for x in orders:
         print "Order ID: ",x.getId()
-        print x.getItem()[0].getName()
+        for y in x.getItem():
+            print y.getName()
         print x.getDate()
         print ""
 
@@ -116,18 +142,20 @@ def connection(sock,server):
     print('')
     print('3')
     print('')
-    orders = server.getOrders()
+    orders = server.getOrders(user)
     for x in orders:
         print "Order ",x.getId(),":"
-        print x.getItem()[0].getName()
+        for y in x.getItem():
+            print y.getName()
         print x.getDate()
         print ""
     print ""
-    orders = server.getCanceled()
+    orders = server.getCanceled(user)
     print "Cancled Orders:"
     for x in orders:
         print "Order ID: ",x.getId()
-        print x.getItem()[0].getName()
+        for y in x.getItem():
+            print y.getName()
         print x.getDate()
         print ""
     sock.close()
