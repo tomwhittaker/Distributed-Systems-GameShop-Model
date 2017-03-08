@@ -34,7 +34,7 @@ def placeOder(sock,server):
     print(sentence)
     if sentence=='y':
         sock.send("Order Made")#3s
-        server.addOrder(item)
+        server.addOrder([item])
     elif sentence == 'n':
         sock.send("Order Not Made")#3s
     else:
@@ -79,7 +79,7 @@ def connection(sock,server):
     orders = server.getOrders()
     for x in orders:
         print "Order ",x.getId(),":"
-        print x.getItem().getName()
+        print x.getItem()[0].getName()
         print x.getDate()
         print ""
     print ""
@@ -87,19 +87,19 @@ def connection(sock,server):
     print "Cancled Orders:"
     for x in orders:
         print "Order ID: ",x.getId()
-        print x.getItem().getName()
+        print x.getItem()[0].getName()
         print x.getDate()
         print ""
 
     uri = 'PYRO:server1@localhost:50611'
     server = Pyro4.Proxy(uri)
     print('')
-    print('2')
+    print('1')
     print('')
     orders = server.getOrders()
     for x in orders:
         print "Order ",x.getId(),":"
-        print x.getItem().getName()
+        print x
         print x.getDate()
         print ""
     print ""
@@ -107,9 +107,10 @@ def connection(sock,server):
     print "Cancled Orders:"
     for x in orders:
         print "Order ID: ",x.getId()
-        print x.getItem().getName()
+        print x.getItem()[0].getName()
         print x.getDate()
         print ""
+
     uri = 'PYRO:server2@localhost:50612'
     server = Pyro4.Proxy(uri)
     print('')
@@ -118,7 +119,7 @@ def connection(sock,server):
     orders = server.getOrders()
     for x in orders:
         print "Order ",x.getId(),":"
-        print x.getItem().getName()
+        print x.getItem()[0].getName()
         print x.getDate()
         print ""
     print ""
@@ -126,7 +127,7 @@ def connection(sock,server):
     print "Cancled Orders:"
     for x in orders:
         print "Order ID: ",x.getId()
-        print x.getItem().getName()
+        print x.getItem()[0].getName()
         print x.getDate()
         print ""
     sock.close()

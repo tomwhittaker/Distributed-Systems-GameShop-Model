@@ -29,7 +29,7 @@ def retrieveOrderHistory(sock):
     print "Orders:"
     for x in history:
         print "Order ",x.getId(),":"
-        print x.getItem().getName()
+        print x.getItem()[0].getName()
         print x.getDate()
         print ""
     can = sock.recv(1024)#2r
@@ -38,7 +38,7 @@ def retrieveOrderHistory(sock):
     print "Cancled Orders:"
     for x in canceled:
         print "Order ID: ",x.getId()
-        print x.getItem().getName()
+        print x.getItem()[0].getName()
         print x.getDate()
         print ""
 
@@ -50,7 +50,7 @@ def cancelOrder(sock):
         history = pickle.loads(sentence)
         for x in history:
             print "Order ",x.getId(),":"
-            print x.getItem().getName()
+            print x.getItem()[0].getName()
             print x.getDate()
             print ""
     else:
@@ -62,7 +62,10 @@ def cancelOrder(sock):
     name=''
     for x in history:
         if sentence == str(x.getId()):
-            name=x.getItem().getName()
+            print type(x)
+            print x.getItem()
+            print x.getItem()[0]
+            name=x.getItem()[0].getName()
     print "Please confirm thay you would like to cancel your order of "+name+"?"
     sentence = raw_input('')
     sock.send(sentence)#3s

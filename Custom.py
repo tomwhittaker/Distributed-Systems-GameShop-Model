@@ -18,21 +18,24 @@ class Item:
     def getCost(self):
         return self.cost
 
+    def __str__(self):
+        return self.name
+
 @Pyro4.expose
 class Order:
     """A simple order class"""
-    def __init__(self, item, date, orderId):
-      self.item = item
+    def __init__(self, items, date, orderId):
       self.canceled=False
       self.date = date
       global orderCounter
       self.id = orderId
+      self.items = items
 
     def cancelOrder(self):
         self.canceled=True
 
     def getItem(self):
-        return self.item
+        return self.items
 
     def getDate(self):
         return self.date
@@ -44,12 +47,11 @@ class Order:
         return self.id
 
     def getName(self):
-        item = self.getItem()
-        name =item.getName()
+        name =self.items[0].getName()
         return name
 
     def __str__(self):
-        return self.item
+        return self.items[0][0]
 
 @Pyro4.expose
 @Pyro4.behavior(instance_mode="single")
@@ -61,17 +63,17 @@ class Server:
       self.port = port
       self.master=master
 
-    def addOrder(self,item):
-        order = Order(item,time.strftime("%d/%m/%Y"),self.orderCounter)
+    def addOrder(self,items):
+        order = Order(items,time.strftime("%d/%m/%Y"),self.orderCounter)
         self.users[self.user][0].append(order)
         self.orderCounter=self.orderCounter+1
         if self.master:
             uri = 'PYRO:server1@localhost:50611'
             server1 = Pyro4.Proxy(uri)
-            server1.createOrderAndItem(item.getName(),item.getCost())
+            server1.createOrderAndItem(items[0].getName(),items[0].getCost())
             uri = 'PYRO:server2@localhost:50612'
             server2 = Pyro4.Proxy(uri)
-            server2.createOrderAndItem(item.getName(),item.getCost())
+            server2.createOrderAndItem(items[0].getName(),items[0].getCost())
 
     def createOrderAndItem(self,name,cost):
         item = Item(name,cost)
