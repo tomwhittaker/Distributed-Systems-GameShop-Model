@@ -53,6 +53,8 @@ def placeOder(sock,server,user):
     sentence = sock.recv(1024)#5r
     if sentence=='y':
         sock.send("Order Made")#4s
+        print items
+        print user
         server.addOrder(items,user)
     elif sentence == 'n':
         sock.send("Order Not Made")#4s
@@ -167,7 +169,7 @@ serverSocket.bind(('localhost',serverPort))
 serverSocket.listen(5)
 print('The server is ready to recieve')
 connectionSocket, addr = serverSocket.accept()
-# sys.excepthook = Pyro4.util.excepthook
+sys.excepthook = Pyro4.util.excepthook
 Pyro4.config.SERIALIZERS_ACCEPTED = {'json','marshal','serpent','pickle'}
 Pyro4.config.SERIALIZER = 'pickle'
 uri = 'PYRO:server0@localhost:50610'

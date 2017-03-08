@@ -65,21 +65,25 @@ class Server:
       self.orderCounter=0
       self.port = port
       self.master=master
+      self.ports=[50610,50611,50612]
+      self.ports.remove(port)
 
     def addOrder(self,items,user):
+        print('addorder started')
         l=[]
         for x in items:
             l.append((x.getName(),x.getCost()))
+        print('items created')
         order = Order(items,time.strftime("%d/%m/%Y"),self.orderCounter)
         self.users[user][0].append(order)
         self.orderCounter=self.orderCounter+1
         if self.master:
-            uri = 'PYRO:server1@localhost:50611'
-            server1 = Pyro4.Proxy(uri)
-            server1.createOrderAndItems(l,user)
-            uri = 'PYRO:server2@localhost:50612'
-            server2 = Pyro4.Proxy(uri)
-            server2.createOrderAndItems(l,user)
+            for x in self.ports:
+                uri = 'PYRO:server'+str(x)[-1:]+'@localhost:'+str(x)
+                print(uri)
+                server1 = Pyro4.Proxy(uri)
+                server1.createOrderAndItems(l,user)
+
 
     def createOrderAndItems(self,items,user):
         order = Order([],time.strftime("%d/%m/%Y"),self.orderCounter)
