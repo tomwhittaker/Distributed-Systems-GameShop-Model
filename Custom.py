@@ -3,7 +3,6 @@ import Pyro4
 import time
 
 @Pyro4.expose
-@Pyro4.behavior(instance_mode="single")
 class Item:
     """A simple item class"""
     def __init__(self, name, cost):
@@ -16,8 +15,10 @@ class Item:
     def getName(self):
         return self.name
 
+    def getCost(self):
+        return self.cost
+
 @Pyro4.expose
-@Pyro4.behavior(instance_mode="single")
 class Order:
     """A simple order class"""
     def __init__(self, item, date, orderId):
@@ -55,37 +56,54 @@ class Order:
 class Server:
     """A simple server class"""
     def __init__(self, port,master):
-      self.orders = []
-      self.canceledOrders = []
+      self.users={}
       self.orderCounter=0
       self.port = port
       self.master=master
 
     def addOrder(self,item):
         order = Order(item,time.strftime("%d/%m/%Y"),self.orderCounter)
-        self.orders.append(order)
+        self.users[self.user][0].append(order)
         self.orderCounter=self.orderCounter+1
         if self.master:
             uri = 'PYRO:server1@localhost:50611'
-            server = Pyro4.Proxy(uri)
-            server.addOrder(item)
+            server1 = Pyro4.Proxy(uri)
+            server1.createOrderAndItem(item.getName(),item.getCost())
             uri = 'PYRO:server2@localhost:50612'
-            server = Pyro4.Proxy(uri)
-            server.addOrder(item)
+            server2 = Pyro4.Proxy(uri)
+            server2.createOrderAndItem(item.getName(),item.getCost())
+
+    def createOrderAndItem(self,name,cost):
+        item = Item(name,cost)
+        order = Order(item,time.strftime("%d/%m/%Y"),self.orderCounter)
+        self.users[self.user][0].append(order)
+        self.orderCounter=self.orderCounter+1
 
     def getOrders(self):
-        return self.orders
+        return self.users[self.user][0]
 
     def getCanceled(self):
-        return self.canceledOrders
+        return self.users[self.user][1]
 
     def cancelOrder(self,orderId):
-        for x in self.orders:
-            if str(x.getId())==orderId:
-                self.orders.remove(x)
+        for x in self.users[self.user][0]:
+            if str(x.getId())==str(orderId):
+                self.users[self.user][0].remove(x)
                 x.cancelOrder()
-                self.canceledOrders.append(x)
+                self.users[self.user][1].append(x)
                 break
+        if self.master:
+            uri = 'PYRO:server1@localhost:50611'
+            server1 = Pyro4.Proxy(uri)
+            server1.cancelOrder(orderId)
+            uri = 'PYRO:server2@localhost:50612'
+            server2 = Pyro4.Proxy(uri)
+            server2.cancelOrder(orderId)
+
+    def getOrderItemName(self,orderId):
+        for x in self.users[self.user][0]:
+            if str(x.getId())==str(orderId):
+                return x.getName()
 
     def __str__(self):
         return self.name
@@ -93,3 +111,16 @@ class Server:
     def check(self):
         print("Visited")
         return "Visited"
+
+    def setCurrentUser(self,user):
+        self.user=user
+        if not self.users.has_key(user):
+            self.users[user]=([],[])
+            print("user created")
+        if self.master:
+            uri = 'PYRO:server1@localhost:50611'
+            server1 = Pyro4.Proxy(uri)
+            server1.setCurrentUser(user)
+            uri = 'PYRO:server2@localhost:50612'
+            server2 = Pyro4.Proxy(uri)
+            server2.setCurrentUser(user)

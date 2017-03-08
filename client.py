@@ -74,6 +74,8 @@ def menu(sock):
     if sentence=='n':
         sock.close()
     else:
+        sentence= raw_input('Enter Username:')
+        sock.send(sentence)#0.5s
         while True:
             print "Would you like to a)make an order, b)retrieve your order history or c) cancel an order?"
             sentence = raw_input('')
