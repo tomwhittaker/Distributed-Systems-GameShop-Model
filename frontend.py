@@ -95,72 +95,89 @@ def connection(sock,server):
 
     print("")
     print('testing')
-    uri = 'PYRO:server0@localhost:50610'
-    server = Pyro4.Proxy(uri)
-    print('')
-    print('1')
-    print('')
-    orders = server.getOrders(user)
-    for x in orders:
-        print "Order ",x.getId(),":"
-        for y in x.getItem():
-            print y.getName()
-        print x.getDate()
+    try:
+        uri = 'PYRO:server0@localhost:50610'
+        server = Pyro4.Proxy(uri)
+        print('')
+        print('1')
+        print('')
+        orders = server.getOrders(user)
+        for x in orders:
+            print "Order ",x.getId(),":"
+            for y in x.getItem():
+                print y.getName()
+            print x.getDate()
+            print ""
         print ""
-    print ""
-    orders = server.getCanceled(user)
-    print "Cancled Orders:"
-    for x in orders:
-        print "Order ID: ",x.getId()
-        for y in x.getItem():
-            print y.getName()
-        print x.getDate()
+        orders = server.getCanceled(user)
+        print "Cancled Orders:"
+        for x in orders:
+            print "Order ID: ",x.getId()
+            for y in x.getItem():
+                print y.getName()
+            print x.getDate()
+            print ""
+    except Pyro4.errors.CommunicationError:
+        print('something has gone wrong')
+    try:
+        uri = 'PYRO:server1@localhost:50611'
+        server = Pyro4.Proxy(uri)
+        print('')
+        print('2')
+        print('')
+        orders = server.getOrders(user)
+        for x in orders:
+            print "Order ",x.getId(),":"
+            for y in x.getItem():
+                print y.getName()
+            print x.getDate()
+            print ""
         print ""
+        orders = server.getCanceled(user)
+        print "Cancled Orders:"
+        for x in orders:
+            print "Order ID: ",x.getId()
+            for y in x.getItem():
+                print y.getName()
+            print x.getDate()
+            print ""
+    except Pyro4.errors.CommunicationError:
+        print('something has gone wrong')
 
-    uri = 'PYRO:server1@localhost:50611'
-    server = Pyro4.Proxy(uri)
-    print('')
-    print('2')
-    print('')
-    orders = server.getOrders(user)
-    for x in orders:
-        print "Order ",x.getId(),":"
-        for y in x.getItem():
-            print y.getName()
-        print x.getDate()
+    try:
+        uri = 'PYRO:server2@localhost:50612'
+        server = Pyro4.Proxy(uri)
+        print('')
+        print('3')
+        print('')
+        orders = server.getOrders(user)
+        for x in orders:
+            print "Order ",x.getId(),":"
+            for y in x.getItem():
+                print y.getName()
+            print x.getDate()
+            print ""
         print ""
-    print ""
-    orders = server.getCanceled(user)
-    print "Cancled Orders:"
-    for x in orders:
-        print "Order ID: ",x.getId()
-        for y in x.getItem():
-            print y.getName()
-        print x.getDate()
-        print ""
-
-    uri = 'PYRO:server2@localhost:50612'
-    server = Pyro4.Proxy(uri)
-    print('')
-    print('3')
-    print('')
-    orders = server.getOrders(user)
-    for x in orders:
-        print "Order ",x.getId(),":"
-        for y in x.getItem():
-            print y.getName()
-        print x.getDate()
-        print ""
-    print ""
-    orders = server.getCanceled(user)
-    print "Cancled Orders:"
-    for x in orders:
-        print "Order ID: ",x.getId()
-        for y in x.getItem():
-            print y.getName()
-        print x.getDate()
-        print ""
+        orders = server.getCanceled(user)
+        print "Cancled Orders:"
+        for x in orders:
+            print "Order ID: ",x.getId()
+            for y in x.getItem():
+                print y.getName()
+            print x.getDate()
+            print ""
+    except Pyro4.errors.CommunicationError:
+        print('something has gone wrong')
     sock.close()
+
+def connectToServer(port):
+    ports=[50610,50611,50612]
+    uri = 'PYRO:server'+str(ports[port])[-1:]+'@localhost:'+str(ports[port])
+    print uri
+    #changes finished
+    server = Pyro4.Proxy(uri)
+    server.setMaster()
+    connection(connectionSocket,server)
 
 
 serverPort = 12001
@@ -172,9 +189,10 @@ connectionSocket, addr = serverSocket.accept()
 sys.excepthook = Pyro4.util.excepthook
 Pyro4.config.SERIALIZERS_ACCEPTED = {'json','marshal','serpent','pickle'}
 Pyro4.config.SERIALIZER = 'pickle'
-ports=[50610,50611,50612]
-master=ports[1]
-uri = 'PYRO:server'+str(master)[-1:]+'@localhost:'+str(master)
-server = Pyro4.Proxy(uri)
-server.setMaster()
-connection(connectionSocket,server)
+#added to make master port variable
+port=0
+try:
+    connectToServer(port)
+except Pyro4.errors.CommunicationError:
+    port=(port+1)%3
+    connectToServer(port)

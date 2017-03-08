@@ -60,11 +60,12 @@ class Order:
 @Pyro4.behavior(instance_mode="single")
 class Server:
     """A simple server class"""
-    def __init__(self, port,master):
+    def __init__(self,port,master):
       self.users={}
       self.orderCounter=0
       self.port = port
       self.master=master
+      #added to so that the slaves are known to the master for whichever port is the master
       self.ports=[50610,50611,50612]
       self.ports.remove(port)
 
@@ -77,12 +78,16 @@ class Server:
         order = Order(items,time.strftime("%d/%m/%Y"),self.orderCounter)
         self.users[user][0].append(order)
         self.orderCounter=self.orderCounter+1
+        #propergate changes from master no matter which port is master
         if self.master:
             for x in self.ports:
                 uri = 'PYRO:server'+str(x)[-1:]+'@localhost:'+str(x)
                 print(uri)
-                server1 = Pyro4.Proxy(uri)
-                server1.createOrderAndItems(l,user)
+                try:
+                    server1 = Pyro4.Proxy(uri)
+                    server1.createOrderAndItems(l,user)
+                except Pyro4.errors.CommunicationError:
+                    print('something has gone wrong')
 
 
     def createOrderAndItems(self,items,user):
@@ -106,12 +111,16 @@ class Server:
                 x.cancelOrder()
                 self.users[user][1].append(x)
                 break
+        #propergate changes from master no matter which port is master
         if self.master:
             for x in self.ports:
                 uri = 'PYRO:server'+str(x)[-1:]+'@localhost:'+str(x)
                 print(uri)
-                server1 = Pyro4.Proxy(uri)
-                server1.cancelOrder(orderId,user)
+                try:
+                    server1 = Pyro4.Proxy(uri)
+                    server1.cancelOrder(orderId,user)
+                except Pyro4.errors.CommunicationError:
+                    print('something has gone wrong')
 
 
 
@@ -127,20 +136,36 @@ class Server:
         if not self.users.has_key(user):
             self.users[user]=([],[])
             print("user created")
+        #propergate changes from master no matter which port is master
         if self.master:
             for x in self.ports:
                 uri = 'PYRO:server'+str(x)[-1:]+'@localhost:'+str(x)
                 print(uri)
-                server1 = Pyro4.Proxy(uri)
-                server1.setCurrentUser(user)
+                try:
+                    server1 = Pyro4.Proxy(uri)
+                    server1.setCurrentUser(user)
+                except Pyro4.errors.CommunicationError:
+                    print('something has gone wrong')
         print(self.ports)
 
     def setMaster(self):
+        print('set master begin')
         self.master=True
+        print('set master')
+        print(self.ports)
+        #to allow you to change a port to master and others to slave
         for x in self.ports:
+            print('set slave begin')
             uri = 'PYRO:server'+str(x)[-1:]+'@localhost:'+str(x)
-            server1 = Pyro4.Proxy(uri)
-            server1.setSlave()
+            print(uri)
+            try:
+                server1 = Pyro4.Proxy(uri)
+                print('connected')
+                server1.setSlave()
+            except Pyro4.errors.CommunicationError:
+                print('something has gone wrong')
+            print('slave set')
+
 
     def setSlave(self):
         self.master=False
