@@ -128,7 +128,6 @@ class Server:
         return self.name
 
     def check(self):
-        print("Visited")
         return "Visited"
 
     def setCurrentUser(self,user):
@@ -163,7 +162,7 @@ class Server:
                 print('connected')
                 server1.setSlave()
             except Pyro4.errors.CommunicationError:
-                print('something has gone wrong')
+                print('something has v gone wrong')
             print('slave set')
 
 

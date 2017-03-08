@@ -21,8 +21,9 @@ itemsL.append(Item("Halo 3",15))
 # customer.addOrder(order3)
 # customer.cancelOrder(order3)
 
-def placeOder(sock,server,user):
+def placeOder(sock,user):
     global items
+    global server
     items=[]
     counter=0
     another=True
@@ -54,41 +55,74 @@ def placeOder(sock,server,user):
         sock.send("Order Made")#4s
         print items
         print user
+        try:
+             server = connectionRMI()
+        except Pyro4.errors.CommunicationError:
+            port=(port+1)%3
+            connectionRMI()
         server.addOrder(items,user)
     elif sentence == 'n':
         sock.send("Order Not Made")#4s
     else:
         sock.send("invalid")#4s
-def retrieveOrderHistory(sock,server,user):
+def retrieveOrderHistory(sock,user):
+    global port
+    global server
+    try:
+         server = connectionRMI()
+    except Pyro4.errors.CommunicationError:
+        port=(port+1)%3
+        connectionRMI()
+    print(server)
     orderHistory =pickle.dumps(server.getOrders(user),-1)
     sock.send(orderHistory) #1s
+    try:
+         server = connectionRMI()
+    except Pyro4.errors.CommunicationError:
+        port=(port+1)%3
+        connectionRMI()
     cancled = pickle.dumps(server.getCanceled(user),-1)
     sock.send(cancled)#2s
-def cancelOrder(sock,server,user):
+def cancelOrder(sock,user):
+    global port
+    global server
     orderHistory =pickle.dumps(server.getOrders(user),-1)
     sock.send(orderHistory)#1s
     orderToCancel = sock.recv(1024)#2r
     sentence = sock.recv(1024)#3r
     if sentence == 'y':
         sock.send("Order Canceled")#2s
+        try:
+             server = connectionRMI()
+        except Pyro4.errors.CommunicationError:
+            port=(port+1)%3
+            connectionRMI()
         server.cancelOrder(orderToCancel,user)
     else:
         sock.send("Order not Canceled")#2s
 
-def connection(sock,server):
+def connection(sock):
+    global port
+    global server
+    sock.send("Please enter a username (If you have been using the store, one of our servers has disconnected and we apologise for the inconvience)") #0.5s
     sentence=sock.recv(1024) #0.5r
     print sentence
+    try:
+         server = connectionRMI()
+    except Pyro4.errors.CommunicationError:
+        port=(port+1)%3
+        connectionRMI()
     server.setCurrentUser(sentence)
     user=sentence
     while True:
         sentence = sock.recv(1024) #1r
         print(sentence)
         if sentence=='a':
-            placeOder(sock,server,user)
+            placeOder(sock,user)
         if sentence=='b':
-            retrieveOrderHistory(sock,server,user)
+            retrieveOrderHistory(sock,user)
         if sentence=='c':
-            cancelOrder(sock,server,user)
+            cancelOrder(sock,user)
         if sentence=='x':
             break
 
@@ -170,15 +204,21 @@ def connection(sock,server):
         print('something has gone wrong')
     sock.close()
 
-def connectToServer(port):
+
+def getURIfromPort():
+    global port
     ports=[50610,50611,50612]
     uri = 'PYRO:server'+str(ports[port])[-1:]+'@localhost:'+str(ports[port])
-    print uri
-    #changes finished
+    return uri
+
+def connectionRMI():
+    global port
+    global server
+    uri = getURIfromPort()
     server = Pyro4.Proxy(uri)
     server.setMaster()
-    connection(connectionSocket,server)
-
+    server.check()
+    return server
 
 serverPort = 12001
 serverSocket = socket(AF_INET, SOCK_STREAM)
@@ -190,9 +230,11 @@ sys.excepthook = Pyro4.util.excepthook
 Pyro4.config.SERIALIZERS_ACCEPTED = {'json','marshal','serpent','pickle'}
 Pyro4.config.SERIALIZER = 'pickle'
 #added to make master port variable
+global port
 port=0
 try:
-    connectToServer(port)
+    connectionRMI()
 except Pyro4.errors.CommunicationError:
     port=(port+1)%3
-    connectToServer(port)
+    connectionRMI()
+connection(connectionSocket)
