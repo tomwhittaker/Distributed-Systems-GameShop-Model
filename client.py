@@ -78,11 +78,10 @@ def cancelOrder(sock):
     sock.send(sentence)#2s
     name=''
     for x in history:
-        name=''
         if sentence == str(x.getId()):
             for y in x.getItem():
                 name = name+ y.getName()+','
-        name=name[:len(name)-1]
+    name=name[:len(name)-1]
     print "Please confirm thay you would like to cancel your order of "+name+"?"
     sentence = str(raw_input(''))
     sock.send(sentence)#3s
