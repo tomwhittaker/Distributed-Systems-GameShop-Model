@@ -6,7 +6,7 @@ import cPickle as pickle
 import Pyro4
 import sys
 import time
-
+import threading
 
 # customer = Customer("Tom","123456")
 # order = Order(items[0],'1/1/1')
@@ -16,6 +16,12 @@ import time
 # customer.addOrder(order2)
 # customer.addOrder(order3)
 # customer.cancelOrder(order3)
+global items
+global server
+global ports
+global crashed
+global port
+
 
 def placeOder(sock,user):
     global items
@@ -90,7 +96,7 @@ def retrieveOrderHistory(sock,user):
         connectionRMI()
     cancled = pickle.dumps(server.getCanceled(user),-1)
     sock.send(cancled)#2s
-def cancelOrder(sock):
+def cancelOrder(sock,user):
     global items
     global server
     global ports
@@ -260,28 +266,40 @@ def connectionRMI():
                 print 'still not working'
     return server
 
+
+
+class myThread (threading.Thread):
+    def __init__(self,connectionSocket):
+        threading.Thread.__init__(self)
+        self.connectionSocket = connectionSocket
+    def run(self):
+        global items
+        global server
+        global ports
+        global crashed
+        global port
+        sys.excepthook = Pyro4.util.excepthook
+        Pyro4.config.SERIALIZERS_ACCEPTED = {'json','marshal','serpent','pickle'}
+        Pyro4.config.SERIALIZER = 'pickle'
+        #added to make master port variable
+        ports=[50610,50611,50612]
+        crashed=[]
+        port=0
+        try:
+            connectionRMI()
+        except Pyro4.errors.CommunicationError:
+            crashed.append(ports[port])
+            port=(port+1)%3
+            connectionRMI()
+        connection(self.connectionSocket)
 serverPort = 12001
 serverSocket = socket(AF_INET, SOCK_STREAM)
 serverSocket.bind(('localhost',serverPort))
 serverSocket.listen(5)
 print('The server is ready to recieve')
-connectionSocket, addr = serverSocket.accept()
-sys.excepthook = Pyro4.util.excepthook
-Pyro4.config.SERIALIZERS_ACCEPTED = {'json','marshal','serpent','pickle'}
-Pyro4.config.SERIALIZER = 'pickle'
-#added to make master port variable
-global items
-global server
-global ports
-global crashed
-global port
-ports=[50610,50611,50612]
-crashed=[]
-port=0
-try:
-    connectionRMI()
-except Pyro4.errors.CommunicationError:
-    crashed.append(ports[port])
-    port=(port+1)%3
-    connectionRMI()
-connection(connectionSocket)
+threads=[]
+while True:
+    connectionSocket, addr = serverSocket.accept()
+    thread = myThread(connectionSocket)
+    thread.start()
+    threads.append(thread)
