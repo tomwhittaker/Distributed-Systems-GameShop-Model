@@ -1,6 +1,7 @@
 from __future__ import print_function
 import Pyro4
 import time
+import ast
 
 @Pyro4.expose
 class Item:
@@ -18,6 +19,9 @@ class Item:
     def getCost(self):
         return self.cost
 
+    def getCloneDetail(self):
+        return self.name,self.cost
+
     def __str__(self):
         return self.name
 
@@ -30,6 +34,14 @@ class Order:
       global orderCounter
       self.id = orderId
       self.items = items
+
+    def getCloneDetail(self):
+        il = []
+        for x in self.items:
+            name,cost=x.getCloneDetail()
+            item = Item(name,cost)
+            il.append(item)
+        return il,self.date,self.id
 
     def cancelOrder(self):
         self.canceled=True
@@ -54,41 +66,38 @@ class Order:
         return name
 
     def __str__(self):
-        return self.items[0][0]
+        return str(self.id)
 
 @Pyro4.expose
 @Pyro4.behavior(instance_mode="single")
 class Server:
     """A simple server class"""
     def __init__(self,port,master):
-      self.users={}
-      self.orderCounter=0
-      self.port = port
-      self.master=master
-      #added to so that the slaves are known to the master for whichever port is the master
-      self.ports=[50610,50611,50612]
-      self.ports.remove(port)
+        self.backUpItems=[]
+        self.users={}
+        self.orderCounter=0
+        self.port = port
+        self.master=master
+        #added to so that the slaves are known to the master for whichever port is the master
+        self.ports=[50610,50611,50612]
+        self.ports.remove(port)
 
     def addOrder(self,items,user):
-        print('addorder started')
         l=[]
         for x in items:
             l.append((x.getName(),x.getCost()))
-        print('items created')
         order = Order(items,time.strftime("%d/%m/%Y"),self.orderCounter)
         self.users[user][0].append(order)
         self.orderCounter=self.orderCounter+1
         #propergate changes from master no matter which port is master
         if self.master:
             for x in self.ports:
-                uri = 'PYRO:server'+str(x)[-1:]+'@localhost:'+str(x)
-                print(uri)
+                uri = 'PYRO:server@localhost:'+str(x)
                 try:
                     server1 = Pyro4.Proxy(uri)
                     server1.createOrderAndItems(l,user)
                 except Pyro4.errors.CommunicationError:
                     print('something has gone wrong')
-
 
     def createOrderAndItems(self,items,user):
         order = Order([],time.strftime("%d/%m/%Y"),self.orderCounter)
@@ -114,8 +123,7 @@ class Server:
         #propergate changes from master no matter which port is master
         if self.master:
             for x in self.ports:
-                uri = 'PYRO:server'+str(x)[-1:]+'@localhost:'+str(x)
-                print(uri)
+                uri = 'PYRO:server@localhost:'+str(x)
                 try:
                     server1 = Pyro4.Proxy(uri)
                     server1.cancelOrder(orderId,user)
@@ -131,6 +139,8 @@ class Server:
         return "Visited"
 
     def setCurrentUser(self,user):
+        print(user)
+        user=user.encode()
         self.user=user
         if not self.users.has_key(user):
             self.users[user]=([],[])
@@ -138,33 +148,82 @@ class Server:
         #propergate changes from master no matter which port is master
         if self.master:
             for x in self.ports:
-                uri = 'PYRO:server'+str(x)[-1:]+'@localhost:'+str(x)
-                print(uri)
+                uri = 'PYRO:server@localhost:'+str(x)
                 try:
                     server1 = Pyro4.Proxy(uri)
-                    server1.setCurrentUser(user)
+                    server1.setCurrentUser(user.encode())
                 except Pyro4.errors.CommunicationError:
                     print('something has gone wrong')
-        print(self.ports)
 
     def setMaster(self):
-        print('set master begin')
         self.master=True
         print('set master')
-        print(self.ports)
         #to allow you to change a port to master and others to slave
         for x in self.ports:
-            print('set slave begin')
-            uri = 'PYRO:server'+str(x)[-1:]+'@localhost:'+str(x)
-            print(uri)
+            uri = 'PYRO:server@localhost:'+str(x)
             try:
                 server1 = Pyro4.Proxy(uri)
-                print('connected')
                 server1.setSlave()
             except Pyro4.errors.CommunicationError:
                 print('something has v gone wrong')
-            print('slave set')
 
 
     def setSlave(self):
         self.master=False
+
+    def resetter(self,uri):
+        server1 = Pyro4.Proxy(uri)
+        server1.reset(self.orderCounter)
+        for key, value in self.users.iteritems() :
+            server1.setCurrentUser(key)
+            print('sRest')
+            cOrders=[]
+            print(value[0])
+            for x in value[0]:
+                print(x)
+                server1.clearBackUp()
+                for y in x.getItem():
+                    server1.resetaddItem(y.getName(),y.getCost())
+                server1.resetAddOrder(x.getDate(),x.getId(),key)
+                server1.clearBackUp()
+            for x in value[1]:
+                server1.clearBackUp()
+                for y in x:
+                    server1.resetaddItem(y.getName(),y.getCost())
+                server1.resetAddCancelOrder(x.getDate(),x.getId(),key)
+                server1.clearBackUp()
+            print('fRest')
+
+    def reset(self,orderCounter):
+        self.users={}
+        self.master=False
+        self.orderCounter=orderCounter
+
+    def resetAddOrder(self,date,oId, user):
+        order=Order(self.backUpItems, date, oId)
+        self.users[user][0].append(order)
+
+    def resetAddCancelOrder(self,date,oId, user):
+        order=Order(self.backUpItems, date, oId)
+        order.cancelOrder()
+        self.users[user][1].append(order)
+
+    def resetaddItem(self,name,cost):
+        item=Item(name,cost)
+        self.backUpItems.append(item)
+
+    def clearBackUp(self):
+        self.backUpItems=[]
+
+@Pyro4.expose
+@Pyro4.behavior(instance_mode="single")
+class Store:
+    """A simple server class"""
+    def __init__(self):
+        self.itemsL=[]
+        self.itemsL.append(Item("For Honour",40))
+        self.itemsL.append(Item("Dark Souls",20))
+        self.itemsL.append(Item("Halo 3",15))
+
+    def getItemList(self):
+        return self.itemsL

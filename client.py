@@ -16,23 +16,23 @@ def placeOder(sock):
         counter= counter+1
     while run:
         print "Which item would you like?"
-        sentence = raw_input('')
+        sentence = str(raw_input(''))
         sock.send(sentence) #2s
         sentence = sock.recv(1024)#2r
         print "Please confirm you would like to order "+sentence+"?"
-        sentence = raw_input('')
+        sentence = str(raw_input(''))
         sock.send(sentence)#3s
         sentence = sock.recv(1024)#3r
         if sentence=="False":
             run=False
         if run:
             print "Would you like to buy another item?"
-            sentence = raw_input('')
+            sentence = str(raw_input(''))
             sock.send(sentence)#4s
             if sentence=='n':
                 run=False
     print "Please can you confirm that you would like to make this order?"
-    sentence = raw_input('')
+    sentence = str(raw_input(''))
     sock.send(sentence)#5s
     sentence =sock.recv(1024)#4r
     print sentence
@@ -60,7 +60,7 @@ def retrieveOrderHistory(sock):
 
 def cancelOrder(sock):
     print "Do you know the order id?"
-    sentence = raw_input('')
+    sentence = str(raw_input(''))
     if sentence=='n':
         sentence = sock.recv(1024)#1r
         history = pickle.loads(sentence)
@@ -74,7 +74,7 @@ def cancelOrder(sock):
         sentence = sock.recv(1024)#1r
         history = pickle.loads(sentence)
     print 'Which order would you like to cancel?'
-    sentence = raw_input('')
+    sentence = str(raw_input(''))
     sock.send(sentence)#2s
     name=''
     for x in history:
@@ -84,7 +84,7 @@ def cancelOrder(sock):
                 name = name+ y.getName()+','
         name=name[:len(name)-1]
     print "Please confirm thay you would like to cancel your order of "+name+"?"
-    sentence = raw_input('')
+    sentence = str(raw_input(''))
     sock.send(sentence)#3s
     print sock.recv(1024)#2r
 
@@ -96,12 +96,12 @@ def menu(sock):
     if sentence=='n':
         sock.close()
     else:
-        sentence = raw_input("Enter Username:")
+        sentence = str(raw_input("Enter Username:"))
         print sentence
         sock.send(sentence)#0.5s
         while True:
             print "Would you like to a)make an order, b)retrieve your order history or c) cancel an order?"
-            sentence = raw_input('')
+            sentence = str(raw_input(''))
             sock.send(sentence)#1
             if (sentence=='a'):
                 placeOder(sock)

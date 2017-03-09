@@ -14,11 +14,13 @@ def main():
     serverPort=50612
     Pyro4.config.SERIALIZERS_ACCEPTED = {'json','marshal','serpent','pickle'}
     server2=Server(serverPort,False)
+    store=Store()
     Pyro4.Daemon.serveSimple(
     {
-        server2: "server2",
+        server2: "server",
         Item: "item",
-        Order:"order"
+        Order:"order",
+        store:'Store'
     },
     ns=False,host='localhost',port=serverPort)
 

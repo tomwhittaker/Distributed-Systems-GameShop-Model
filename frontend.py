@@ -7,10 +7,6 @@ import Pyro4
 import sys
 import time
 
-itemsL=[]
-itemsL.append(Item("For Honour",40))
-itemsL.append(Item("Dark Souls",20))
-itemsL.append(Item("Halo 3",15))
 
 # customer = Customer("Tom","123456")
 # order = Order(items[0],'1/1/1')
@@ -24,6 +20,10 @@ itemsL.append(Item("Halo 3",15))
 def placeOder(sock,user):
     global items
     global server
+    global ports
+    global crashed
+    global port
+    global itemsL
     items=[]
     counter=0
     another=True
@@ -58,6 +58,7 @@ def placeOder(sock,user):
         try:
              server = connectionRMI()
         except Pyro4.errors.CommunicationError:
+            crashed.append(ports[port])
             port=(port+1)%3
             connectionRMI()
         server.addOrder(items,user)
@@ -66,11 +67,16 @@ def placeOder(sock,user):
     else:
         sock.send("invalid")#4s
 def retrieveOrderHistory(sock,user):
-    global port
+    global items
     global server
+    global ports
+    global crashed
+    global port
+    global itemsL
     try:
          server = connectionRMI()
     except Pyro4.errors.CommunicationError:
+        crashed.append(ports[port])
         port=(port+1)%3
         connectionRMI()
     print(server)
@@ -79,13 +85,18 @@ def retrieveOrderHistory(sock,user):
     try:
          server = connectionRMI()
     except Pyro4.errors.CommunicationError:
+        crashed.append(ports[port])
         port=(port+1)%3
         connectionRMI()
     cancled = pickle.dumps(server.getCanceled(user),-1)
     sock.send(cancled)#2s
-def cancelOrder(sock,user):
-    global port
+def cancelOrder(sock):
+    global items
     global server
+    global ports
+    global crashed
+    global port
+    global itemsL
     orderHistory =pickle.dumps(server.getOrders(user),-1)
     sock.send(orderHistory)#1s
     orderToCancel = sock.recv(1024)#2r
@@ -95,6 +106,7 @@ def cancelOrder(sock,user):
         try:
              server = connectionRMI()
         except Pyro4.errors.CommunicationError:
+            crashed.append(ports[port])
             port=(port+1)%3
             connectionRMI()
         server.cancelOrder(orderToCancel,user)
@@ -102,17 +114,23 @@ def cancelOrder(sock,user):
         sock.send("Order not Canceled")#2s
 
 def connection(sock):
-    global port
+    global items
     global server
+    global ports
+    global crashed
+    global port
+    global itemsL
     sock.send("Please enter a username (If you have been using the store, one of our servers has disconnected and we apologise for the inconvience)") #0.5s
     sentence=sock.recv(1024) #0.5r
     print sentence
     try:
          server = connectionRMI()
     except Pyro4.errors.CommunicationError:
+        crashed.append(ports[port])
         port=(port+1)%3
         connectionRMI()
-    server.setCurrentUser(sentence)
+    server.setCurrentUser(sentence.encode('ascii', 'ignore'))
+    # crashed=[50610,50611,50612]
     user=sentence
     while True:
         sentence = sock.recv(1024) #1r
@@ -130,7 +148,7 @@ def connection(sock):
     print("")
     print('testing')
     try:
-        uri = 'PYRO:server0@localhost:50610'
+        uri = 'PYRO:server@localhost:50610'
         server = Pyro4.Proxy(uri)
         print('')
         print('1')
@@ -154,7 +172,7 @@ def connection(sock):
     except Pyro4.errors.CommunicationError:
         print('something has gone wrong')
     try:
-        uri = 'PYRO:server1@localhost:50611'
+        uri = 'PYRO:server@localhost:50611'
         server = Pyro4.Proxy(uri)
         print('')
         print('2')
@@ -179,7 +197,7 @@ def connection(sock):
         print('something has gone wrong')
 
     try:
-        uri = 'PYRO:server2@localhost:50612'
+        uri = 'PYRO:server@localhost:50612'
         server = Pyro4.Proxy(uri)
         print('')
         print('3')
@@ -206,18 +224,40 @@ def connection(sock):
 
 
 def getURIfromPort():
+    global items
+    global server
+    global ports
+    global crashed
     global port
-    ports=[50610,50611,50612]
-    uri = 'PYRO:server'+str(ports[port])[-1:]+'@localhost:'+str(ports[port])
+    global itemsL
+    uri = 'PYRO:server@localhost:'+str(ports[port])
     return uri
 
 def connectionRMI():
-    global port
+    global items
     global server
+    global ports
+    global crashed
+    global port
+    global itemsL
     uri = getURIfromPort()
     server = Pyro4.Proxy(uri)
     server.setMaster()
     server.check()
+    uriS = 'PYRO:Store@localhost:'+str(ports[port])
+    store=Pyro4.Proxy(uriS)
+    itemsL=store.getItemList()
+    if not len(crashed)==0:
+        for x in crashed:
+            try:
+                uri = 'PYRO:server@localhost:'+str(x)
+                serverF = Pyro4.Proxy(uri)
+                serverF.check()
+                server.resetter(uri)
+                crashed.remove(x)
+                print('resetted server')
+            except Pyro4.errors.CommunicationError:
+                print 'still not working'
     return server
 
 serverPort = 12001
@@ -230,11 +270,18 @@ sys.excepthook = Pyro4.util.excepthook
 Pyro4.config.SERIALIZERS_ACCEPTED = {'json','marshal','serpent','pickle'}
 Pyro4.config.SERIALIZER = 'pickle'
 #added to make master port variable
+global items
+global server
+global ports
+global crashed
 global port
+ports=[50610,50611,50612]
+crashed=[]
 port=0
 try:
     connectionRMI()
 except Pyro4.errors.CommunicationError:
+    crashed.append(ports[port])
     port=(port+1)%3
     connectionRMI()
 connection(connectionSocket)
