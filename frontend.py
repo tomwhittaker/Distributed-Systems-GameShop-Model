@@ -126,7 +126,6 @@ def connection(sock):
     global crashed
     global port
     global itemsL
-    sock.send("Please enter a username (If you have been using the store, one of our servers has disconnected and we apologise for the inconvience)") #0.5s
     sentence=sock.recv(1024) #0.5r
     print sentence
     try:

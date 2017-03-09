@@ -89,14 +89,11 @@ def cancelOrder(sock):
 
 def menu(sock):
     print 'Ready'
-    # sentence = raw_input('Do you wish to access the online Game Shop? (y=yes and n=no)')
-    sentence = sock.recv(1024)
-    print(sentence)
+    sentence = raw_input('Do you wish to access the online Game Shop? (y=yes and n=no)')
     if sentence=='n':
         sock.close()
     else:
         sentence = str(raw_input("Enter Username:"))
-        print sentence
         sock.send(sentence)#0.5s
         while True:
             print "Would you like to a)make an order, b)retrieve your order history or c) cancel an order?"
