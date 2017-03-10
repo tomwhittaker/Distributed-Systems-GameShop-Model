@@ -246,6 +246,12 @@ def connectionRMI():
     global crashed
     global port
     global itemsL
+    for x in ports:
+        try:
+            uri = 'PYRO:server@localhost:'+str(x)
+            server = Pyro4.Proxy(uri)
+        except Pyro4.errors.CommunicationError:
+            crashed.append(x)
     uri = getURIfromPort()
     server = Pyro4.Proxy(uri)
     server.setMaster()
