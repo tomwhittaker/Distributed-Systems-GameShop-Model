@@ -100,7 +100,7 @@ class Server:
                     server1 = Pyro4.Proxy(uri)
                     server1.createOrderAndItems(l,user)
                 except Pyro4.errors.CommunicationError:
-                    print('something has gone wrong')
+                    print('CommunicationError')
 
     def createOrderAndItems(self,items,user):
         self.nOrders=self.nOrders+1
@@ -134,7 +134,7 @@ class Server:
                     server1 = Pyro4.Proxy(uri)
                     server1.cancelOrder(orderId,user)
                 except Pyro4.errors.CommunicationError:
-                    print('something has gone wrong')
+                    print('CommunicationError')
 
     def __str__(self):
         return self.name
@@ -147,7 +147,6 @@ class Server:
         self.user=user
         if not self.users.has_key(user):
             self.users[user]=([],[])
-            print("user created")
         #propergate changes from master no matter which port is master
         if self.master:
             for x in self.ports:
@@ -156,11 +155,10 @@ class Server:
                     server1 = Pyro4.Proxy(uri)
                     server1.setCurrentUser(user.encode())
                 except Pyro4.errors.CommunicationError:
-                    print('something has gone wrong')
+                    print('CommunicationError')
 
     def setMaster(self):
         self.master=True
-        print('set master')
         #to allow you to change a port to master and others to slave
         for x in self.ports:
             uri = 'PYRO:server@localhost:'+str(x)
@@ -168,7 +166,7 @@ class Server:
                 server1 = Pyro4.Proxy(uri)
                 server1.setSlave()
             except Pyro4.errors.CommunicationError:
-                print('something has v gone wrong')
+                print('CommunicationError')
 
 
     def setSlave(self):
@@ -177,17 +175,9 @@ class Server:
     def resetter(self,uri):
         server1 = Pyro4.Proxy(uri)
         server1.reset(self.orderCounter)
-        print(self.users)
-        for key, value in self.users.iteritems():
-            print(key)
-            print(value)
         for key, value in self.users.iteritems():
             server1.setCurrentUser(key)
-            print('sRest')
-            cOrders=[]
-            print(value[0])
             for x in value[0]:
-                print(x)
                 server1.clearBackUp()
                 for y in x.getItem():
                     server1.resetaddItem(y.getName(),y.getCost())
@@ -199,7 +189,6 @@ class Server:
                     server1.resetaddItem(y.getName(),y.getCost())
                 server1.resetAddCancelOrder(x.getDate(),x.getId(),key)
                 server1.clearBackUp()
-            print('fRest')
 
     def reset(self,orderCounter):
         self.users={}

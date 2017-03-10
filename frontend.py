@@ -40,10 +40,8 @@ def placeOder(sock,user):
         num= int(sentence)
         item = itemsL[num-1]
         name=item.getName()
-        print(name)
         sock.send(name)#2s
         sentence = sock.recv(1024) #3r
-        print(sentence)
         if sentence=='y':
             counter=counter+1
             items.append(item)
@@ -59,8 +57,6 @@ def placeOder(sock,user):
     sentence = sock.recv(1024)#5r
     if sentence=='y':
         sock.send("Order Made")#4s
-        print items
-        print user
         try:
              server = connectionRMI()
         except Pyro4.errors.CommunicationError:
@@ -85,7 +81,6 @@ def retrieveOrderHistory(sock,user):
         crashed.append(ports[port])
         port=(port+1)%3
         connectionRMI()
-    print(server)
     orderHistory =pickle.dumps(server.getOrders(user),-1)
     sock.send(orderHistory) #1s
     try:
@@ -127,7 +122,6 @@ def connection(sock):
     global port
     global itemsL
     sentence=sock.recv(1024) #0.5r
-    print sentence
     try:
          server = connectionRMI()
     except Pyro4.errors.CommunicationError:
@@ -139,7 +133,6 @@ def connection(sock):
     user=sentence
     while True:
         sentence = sock.recv(1024) #1r
-        print(sentence)
         if sentence=='a':
             placeOder(sock,user)
         if sentence=='b':
@@ -175,7 +168,7 @@ def connection(sock):
             print x.getDate()
             print ""
     except Pyro4.errors.CommunicationError:
-        print('something has gone wrong')
+        print('Server Down')
     try:
         uri = 'PYRO:server@localhost:50611'
         server = Pyro4.Proxy(uri)
@@ -199,7 +192,7 @@ def connection(sock):
             print x.getDate()
             print ""
     except Pyro4.errors.CommunicationError:
-        print('something has gone wrong')
+        print('Server Down')
 
     try:
         uri = 'PYRO:server@localhost:50612'
@@ -224,7 +217,7 @@ def connection(sock):
             print x.getDate()
             print ""
     except Pyro4.errors.CommunicationError:
-        print('something has gone wrong')
+        print('Server Down')
     sock.close()
 
 
@@ -284,6 +277,20 @@ class myThread (threading.Thread):
         ports=[50610,50611,50612]
         crashed=[]
         port=0
+        maxVal=[-1,-1]
+        for x in range(0,3):
+            try:
+                uri = 'PYRO:server@localhost:'+str(ports[x])
+                server = Pyro4.Proxy(uri)
+                o,c = server.retNumberOfOrders()
+                if c>maxVal[1]:
+                    maxVal[1]=c
+                    port=x
+                if (o>maxVal[0]) or (o<maxVal[0] and c>maxVal[1]):
+                    maxVal[0]=o
+                    port=x
+            except Pyro4.errors.CommunicationError:
+                print('CommunicationError')
         try:
             connectionRMI()
         except Pyro4.errors.CommunicationError:
