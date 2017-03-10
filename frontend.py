@@ -63,7 +63,11 @@ def placeOder(sock,user):
             crashed.append(ports[port])
             port=(port+1)%3
             connectionRMI()
-        server.addOrder(items,user)
+        print(user)
+        fail = server.addOrder(items,user.encode())
+        if fail is not None:
+            for x in fail:
+                crashed.append(x)
     elif sentence == 'n':
         sock.send("Order Not Made")#4s
     else:
@@ -81,7 +85,7 @@ def retrieveOrderHistory(sock,user):
         crashed.append(ports[port])
         port=(port+1)%3
         connectionRMI()
-    orderHistory =pickle.dumps(server.getOrders(user),-1)
+    orderHistory =pickle.dumps(server.getOrders(user.encode()),-1)
     sock.send(orderHistory) #1s
     try:
          server = connectionRMI()
@@ -89,7 +93,7 @@ def retrieveOrderHistory(sock,user):
         crashed.append(ports[port])
         port=(port+1)%3
         connectionRMI()
-    cancled = pickle.dumps(server.getCanceled(user),-1)
+    cancled = pickle.dumps(server.getCanceled(user.encode()),-1)
     sock.send(cancled)#2s
 def cancelOrder(sock,user):
     global items
@@ -98,7 +102,7 @@ def cancelOrder(sock,user):
     global crashed
     global port
     global itemsL
-    orderHistory =pickle.dumps(server.getOrders(user),-1)
+    orderHistory =pickle.dumps(server.getOrders(user.encode()),-1)
     sock.send(orderHistory)#1s
     orderToCancel = sock.recv(1024)#2r
     sentence = sock.recv(1024)#3r
@@ -110,7 +114,10 @@ def cancelOrder(sock,user):
             crashed.append(ports[port])
             port=(port+1)%3
             connectionRMI()
-        server.cancelOrder(orderToCancel,user)
+        fail = server.cancelOrder(orderToCancel,user.encode())
+        if fail is not None:
+            for x in fail:
+                crashed.append(x)
     else:
         sock.send("Order not Canceled")#2s
 
@@ -134,11 +141,11 @@ def connection(sock):
     while True:
         sentence = sock.recv(1024) #1r
         if sentence=='a':
-            placeOder(sock,user)
+            placeOder(sock,user.encode())
         if sentence=='b':
-            retrieveOrderHistory(sock,user)
+            retrieveOrderHistory(sock,user.encode())
         if sentence=='c':
-            cancelOrder(sock,user)
+            cancelOrder(sock,user.encode())
         if sentence=='x':
             break
 
@@ -151,7 +158,7 @@ def connection(sock):
         print('')
         print('1')
         print('')
-        orders = server.getOrders(user)
+        orders = server.getOrders(user.encode())
         for x in orders:
             print "Order ",x.getId(),":"
             for y in x.getItem():
@@ -159,7 +166,7 @@ def connection(sock):
             print x.getDate()
             print ""
         print ""
-        orders = server.getCanceled(user)
+        orders = server.getCanceled(user.encode())
         print "Cancled Orders:"
         for x in orders:
             print "Order ID: ",x.getId()
@@ -175,7 +182,7 @@ def connection(sock):
         print('')
         print('2')
         print('')
-        orders = server.getOrders(user)
+        orders = server.getOrders(user.encode())
         for x in orders:
             print "Order ",x.getId(),":"
             for y in x.getItem():
@@ -183,7 +190,7 @@ def connection(sock):
             print x.getDate()
             print ""
         print ""
-        orders = server.getCanceled(user)
+        orders = server.getCanceled(user.encode())
         print "Cancled Orders:"
         for x in orders:
             print "Order ID: ",x.getId()
@@ -200,7 +207,7 @@ def connection(sock):
         print('')
         print('3')
         print('')
-        orders = server.getOrders(user)
+        orders = server.getOrders(user.encode())
         for x in orders:
             print "Order ",x.getId(),":"
             for y in x.getItem():
@@ -208,7 +215,7 @@ def connection(sock):
             print x.getDate()
             print ""
         print ""
-        orders = server.getCanceled(user)
+        orders = server.getCanceled(user.encode())
         print "Cancled Orders:"
         for x in orders:
             print "Order ID: ",x.getId()
@@ -232,6 +239,7 @@ def getURIfromPort():
     return uri
 
 def connectionRMI():
+    #added to reset fallen master server
     global items
     global server
     global ports
@@ -278,6 +286,7 @@ class myThread (threading.Thread):
         crashed=[]
         port=0
         maxVal=[-1,-1]
+        #added to make sure the port with the most up to date history is selected
         for x in range(0,3):
             try:
                 uri = 'PYRO:server@localhost:'+str(ports[x])
@@ -291,6 +300,7 @@ class myThread (threading.Thread):
                     port=x
             except Pyro4.errors.CommunicationError:
                 print('CommunicationError')
+        #added to carry on attempting to conenct until it gets to a server which is not down
         try:
             connectionRMI()
         except Pyro4.errors.CommunicationError:

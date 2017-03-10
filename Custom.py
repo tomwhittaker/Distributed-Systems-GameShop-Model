@@ -89,18 +89,21 @@ class Server:
         for x in items:
             l.append((x.getName(),x.getCost()))
         order = Order(items,time.strftime("%d/%m/%Y"),self.orderCounter)
-        self.users[user][0].append(order)
+        self.users[user.encode()][0].append(order)
         self.orderCounter=self.orderCounter+1
         self.nOrders=self.nOrders+1
-        #propergate changes from master no matter which port is master
+        #propergate changes from master no matter which server is master
+        self.fail=[]
         if self.master:
             for x in self.ports:
                 uri = 'PYRO:server@localhost:'+str(x)
                 try:
                     server1 = Pyro4.Proxy(uri)
-                    server1.createOrderAndItems(l,user)
+                    server1.createOrderAndItems(l,user.encode())
                 except Pyro4.errors.CommunicationError:
                     print('CommunicationError')
+                    self.fail.append(x)
+        return self.fail
 
     def createOrderAndItems(self,items,user):
         self.nOrders=self.nOrders+1
@@ -108,33 +111,36 @@ class Server:
         for x in items:
             item = Item(x[0],x[0])
             order.addItem(item)
-        self.users[user][0].append(order)
+        self.users[user.encode()][0].append(order)
         self.orderCounter=self.orderCounter+1
 
     def getOrders(self,user):
-        return self.users[user][0]
+        return self.users[user.encode()][0]
 
     def getCanceled(self,user):
-        return self.users[user][1]
+        return self.users[user.encode()][1]
 
     def cancelOrder(self,orderId,user):
-        for x in self.users[user][0]:
+        for x in self.users[user.encode()][0]:
             if str(x.getId())==str(orderId):
-                self.users[user][0].remove(x)
+                self.users[user.encode()][0].remove(x)
                 x.cancelOrder()
-                self.users[user][1].append(x)
+                self.users[user.encode()][1].append(x)
                 break
         self.nOrders=self.nOrders-1
         self.nCOrders=self.nCOrders+1
-        #propergate changes from master no matter which port is master
+        #propergate changes from master no matter which server is master
+        self.fail=[]
         if self.master:
             for x in self.ports:
                 uri = 'PYRO:server@localhost:'+str(x)
                 try:
                     server1 = Pyro4.Proxy(uri)
-                    server1.cancelOrder(orderId,user)
+                    server1.cancelOrder(orderId,user.encode())
                 except Pyro4.errors.CommunicationError:
                     print('CommunicationError')
+                    self.fail.append(x)
+        return self.fail
 
     def __str__(self):
         return self.name
@@ -143,11 +149,12 @@ class Server:
         return "Visited"
 
     def setCurrentUser(self,user):
+        print(user)
         user=user.encode()
         self.user=user
         if not self.users.has_key(user):
             self.users[user]=([],[])
-        #propergate changes from master no matter which port is master
+        #propergate changes from master no matter which servers is master
         if self.master:
             for x in self.ports:
                 uri = 'PYRO:server@localhost:'+str(x)
@@ -191,18 +198,19 @@ class Server:
                 server1.clearBackUp()
 
     def reset(self,orderCounter):
+        print('reset')
         self.users={}
         self.master=False
         self.orderCounter=orderCounter
 
     def resetAddOrder(self,date,oId, user):
         order=Order(self.backUpItems, date, oId)
-        self.users[user][0].append(order)
+        self.users[user.encode()][0].append(order)
 
     def resetAddCancelOrder(self,date,oId, user):
         order=Order(self.backUpItems, date, oId)
         order.cancelOrder()
-        self.users[user][1].append(order)
+        self.users[user.encode()][1].append(order)
 
     def resetaddItem(self,name,cost):
         item=Item(name,cost)
