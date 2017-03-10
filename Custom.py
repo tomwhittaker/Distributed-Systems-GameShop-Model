@@ -78,6 +78,8 @@ class Server:
         self.orderCounter=0
         self.port = port
         self.master=master
+        self.nOrders=0
+        self.nCOrders=0
         #added to so that the slaves are known to the master for whichever port is the master
         self.ports=[50610,50611,50612]
         self.ports.remove(port)
@@ -89,6 +91,7 @@ class Server:
         order = Order(items,time.strftime("%d/%m/%Y"),self.orderCounter)
         self.users[user][0].append(order)
         self.orderCounter=self.orderCounter+1
+        self.nOrders=self.nOrders+1
         #propergate changes from master no matter which port is master
         if self.master:
             for x in self.ports:
@@ -100,6 +103,7 @@ class Server:
                     print('something has gone wrong')
 
     def createOrderAndItems(self,items,user):
+        self.nOrders=self.nOrders+1
         order = Order([],time.strftime("%d/%m/%Y"),self.orderCounter)
         for x in items:
             item = Item(x[0],x[0])
@@ -120,6 +124,8 @@ class Server:
                 x.cancelOrder()
                 self.users[user][1].append(x)
                 break
+        self.nOrders=self.nOrders-1
+        self.nCOrders=self.nCOrders+1
         #propergate changes from master no matter which port is master
         if self.master:
             for x in self.ports:
@@ -130,8 +136,6 @@ class Server:
                 except Pyro4.errors.CommunicationError:
                     print('something has gone wrong')
 
-
-
     def __str__(self):
         return self.name
 
@@ -139,7 +143,6 @@ class Server:
         return "Visited"
 
     def setCurrentUser(self,user):
-        print(user)
         user=user.encode()
         self.user=user
         if not self.users.has_key(user):
@@ -174,7 +177,11 @@ class Server:
     def resetter(self,uri):
         server1 = Pyro4.Proxy(uri)
         server1.reset(self.orderCounter)
-        for key, value in self.users.iteritems() :
+        print(self.users)
+        for key, value in self.users.iteritems():
+            print(key)
+            print(value)
+        for key, value in self.users.iteritems():
             server1.setCurrentUser(key)
             print('sRest')
             cOrders=[]
@@ -214,6 +221,17 @@ class Server:
 
     def clearBackUp(self):
         self.backUpItems=[]
+
+    def setNumberOfOrders(self):
+        self.nOrders=0
+        self.nCOrders=0
+        for key, value in self.users.iteritems():
+            self.nOrders=self.nOrders+len(value[0])
+            self.cNOrders=self.cNOrders+len(value[1])
+        return self.nOrders, self.nCOrders
+
+    def retNumberOfOrders(self):
+        return self.nOrders, self.nCOrders
 
 @Pyro4.expose
 @Pyro4.behavior(instance_mode="single")
